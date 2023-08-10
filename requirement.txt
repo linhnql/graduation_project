@@ -1,5 +1,3 @@
-[0:56] NGUYEN QUANG LINH 20194092
-
 elasticsearch==8.8.0
 happybase==1.2.0
 pyvi==0.1.1
