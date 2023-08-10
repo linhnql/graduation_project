@@ -1,0 +1,7 @@
+__pycache__
+logs/
+cate.txt 
+.vscode
+/venv
+/venv/*
+venv*

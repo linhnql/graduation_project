@@ -1,0 +1,582 @@
+version: "3.8"
+services:
+  zookeeper-1:
+    user: root 
+    image: confluentinc/cp-zookeeper:latest
+    hostname: zookeeper-1
+    container_name: zookeeper-1
+    environment:
+      - ZOOKEEPER_SERVER_ID=1
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+      - ZOOKEEPER_QUORUM_LISTEN_ON_ALL_IPS=true
+      - ZOOKEEPER_SERVERS=0.0.0.0:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
+    ports:
+      - 12181:2181
+    volumes:
+      - ../storage/zookeeper-1/data:/var/lib/zookeeper/data
+      - ../storage/zookeeper-1/log:/var/lib/zookeeper/log
+    networks:
+      tiki_net:
+        ipv4_address: 172.20.0.2
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  zookeeper-2:
+    user: root 
+    image: confluentinc/cp-zookeeper:latest
+    hostname: zookeeper-2
+    container_name: zookeeper-2
+    environment:
+      - ZOOKEEPER_SERVER_ID=2
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+      - ZOOKEEPER_QUORUM_LISTEN_ON_ALL_IPS=true
+      - ZOOKEEPER_SERVERS=zookeeper-1:2888:3888;0.0.0.0:2888:3888;zookeeper-3:2888:3888
+    ports:
+      - 22181:2181
+    volumes:
+      - ../storage/zookeeper-2/data:/var/lib/zookeeper/data
+      - ../storage/zookeeper-2/log:/var/lib/zookeeper/log
+    networks:
+      tiki_net:
+        ipv4_address: 172.20.0.3
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  zookeeper-3:
+    user: root 
+    image: confluentinc/cp-zookeeper:latest
+    hostname: zookeeper-3
+    container_name: zookeeper-3
+    environment:
+      - ZOOKEEPER_SERVER_ID=3
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+      - ZOOKEEPER_QUORUM_LISTEN_ON_ALL_IPS=true
+      - ZOOKEEPER_SERVERS=zookeeper-1:2888:3888;zookeeper-2:2888:3888;0.0.0.0:2888:3888
+    ports:
+      - 32181:2181
+    volumes:
+      - ../storage/zookeeper-3/data:/var/lib/zookeeper/data
+      - ../storage/zookeeper-3/log:/var/lib/zookeeper/log
+    networks:
+      tiki_net:
+        ipv4_address: 172.20.0.4
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  kafka-1:
+    user: root 
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka-1
+    hostname: kafka-1
+    restart: on-failure
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    ports:
+      - 19092:19092
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://localhost:19092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=3
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+    volumes:
+      - ../storage/kafka-1:/var/lib/kafka/data
+    networks:
+      tiki_net:
+        ipv4_address: 172.20.0.5
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  kafka-2:
+    user: root 
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka-2
+    hostname: kafka-2
+    restart: on-failure
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    ports:
+      - 29092:29092
+    environment:
+      - KAFKA_BROKER_ID=2
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://localhost:29092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=3
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+    volumes:
+      - ../storage/kafka-2:/var/lib/kafka/data
+    networks:
+      tiki_net:
+        ipv4_address: 172.20.0.6
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  kafka-3:
+    user: root 
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka-3
+    hostname: kafka-3
+    restart: on-failure
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    ports:
+      - 39092:39092
+    environment:
+      - KAFKA_BROKER_ID=3
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper-1:2181,zookeeper-2:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka-3:9092,PLAINTEXT_HOST://localhost:39092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=3
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+    volumes:
+      - ../storage/kafka-3:/var/lib/kafka/data
+    networks:
+      tiki_net:
+        ipv4_address: 172.20.0.7
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # namenode:
+  #   image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+  #   container_name: namenode
+  #   hostname: namenode
+  #   ports:
+  #     - 9870:9870
+  #   environment:
+  #     - CLUSTER_NAME=tiki
+  #   env_file:
+  #     - ./hadoop/hadoop.env
+  #   deploy:
+  #     mode: replicated
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: on-failure
+  #     placement:
+  #       constraints:
+  #         - node.hostname == akswnc4.aksw.uni-leipzig.de
+  #   volumes:
+  #     - ../storage/hadoop/namenode:/hadoop/dfs/name
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.8
+
+  # datanode-1:
+  #   image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+  #   container_name: datanode-1
+  #   hostname: datanode-1
+  #   ports:
+  #     - 19864:9864
+  #   environment:
+  #     - SERVICE_PRECONDITION=namenode:9870
+  #   env_file:
+  #     - ./hadoop/hadoop.env
+  #   deploy:
+  #     mode: global
+  #     restart_policy:
+  #       condition: on-failure
+  #   volumes:
+  #   - ../storage/hadoop/datanode-1:/hadoop/dfs/data
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.9
+
+  # datanode-2:
+  #   image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+  #   container_name: datanode-2
+  #   hostname: datanode-2
+  #   ports:
+  #     - 29864:9864
+  #   environment:
+  #     - SERVICE_PRECONDITION=namenode:9870
+  #   env_file:
+  #     - ./hadoop/hadoop.env
+  #   deploy:
+  #     mode: global
+  #     restart_policy:
+  #       condition: on-failure
+  #   volumes:
+  #   - ../storage/hadoop/datanode-2:/hadoop/dfs/data
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.10
+
+  # datanode-3:
+  #   image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+  #   container_name: datanode-3
+  #   hostname: datanode-3
+  #   ports:
+  #     - 39864:9864
+  #   environment:
+  #     - SERVICE_PRECONDITION=namenode:9870
+  #   env_file:
+  #     - ./hadoop/hadoop.env
+  #   deploy:
+  #     mode: global
+  #     restart_policy:
+  #       condition: on-failure
+  #   volumes:
+  #     - ../storage/hadoop/datanode-3:/hadoop/dfs/data
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.11
+
+  # resourcemanager:
+  #   image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+  #   container_name: resourcemanager
+  #   hostname: resourcemanager
+  #   ports:
+  #     - 8088:8088
+  #   environment:
+  #     SERVICE_PRECONDITION: "namenode:9870 datanode-1:9864 datanode-2:9864 datanode-3:9864"
+  #   env_file:
+  #     - ./hadoop/hadoop.env
+  #   deploy:
+  #     mode: replicated
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: on-failure
+  #     placement:
+  #       constraints:
+  #         - node.hostname == akswnc4.aksw.uni-leipzig.de
+  #   healthcheck:
+  #     disable: true
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.12
+
+  # nodemanager:
+  #   image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+  #   container_name: nodemanager
+  #   hostname: nodemanager
+  #   ports:
+  #     - 8042:8042
+  #   environment:
+  #     SERVICE_PRECONDITION: "namenode:9870 datanode-1:9864 datanode-2:9864 datanode-3:9864 resourcemanager:8088"
+  #   env_file:
+  #     - ./hadoop/hadoop.env
+  #   deploy:
+  #     mode: global
+  #     restart_policy:
+  #       condition: on-failure
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.13
+
+  # historyserver:
+  #   image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+  #   container_name: historyserver
+  #   hostname: historyserver
+  #   ports:
+  #     - 8188:8188
+  #   environment:
+  #     SERVICE_PRECONDITION: "namenode:9870 datanode-1:9864 datanode-2:9864 datanode-3:9864 resourcemanager:8088"
+  #   env_file:
+  #     - ./hadoop/hadoop.env
+  #   deploy:
+  #     mode: replicated
+  #     replicas: 1
+  #     placement:
+  #       constraints:
+  #         - node.hostname == akswnc4.aksw.uni-leipzig.de
+  #   volumes:
+  #     - ../storage/hadoop/hadoop_historyserver:/hadoop/yarn/timeline
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.14
+  
+  # hbase:
+  #   image: dajobe/hbase
+  #   hostname: hbase
+  #   container_name: hbase
+  #   restart: always
+  #   ports:
+  #     - 9090:9090
+  #     - 16010:16010
+  #   depends_on:
+  #     - zookeeper-1
+  #     - zookeeper-2
+  #     - zookeeper-3
+  #   env_file:
+  #     - ./hbase/hbase.env
+  #   environment:
+  #     SERVICE_PRECONDITION: "namenode:9870 datanode-1:9864 datanode-2:9864 datanode-3:9864 zookeeper-1:2181 zookeeper-2:2181 zookeeper-3:2181"
+  #   volumes:
+  #     - ../storage/hbase:/hadoop-data
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.15
+
+  # hbase-master:
+  #   image: bde2020/hbase-master
+  #   container_name: hbase-master
+  #   hostname: hbase-master
+  #   restart: always
+  #   ports:
+  #     - 16010:16010
+  #     - 9095:9095
+  #     - 9090:9090
+  #   deploy:
+  #     mode: replicated
+  #     replicas: 1
+  #     endpoint_mode: dnsrr
+  #     restart_policy:
+  #       condition: on-failure
+  #     placement:
+  #       constraints:
+  #         - node.hostname == akswnc4.aksw.uni-leipzig.de
+  #   environment:
+  #     SERVICE_PRECONDITION: "namenode:9870 datanode-1:9864 datanode-2:9864 datanode-3:9864 zookeeper-1:2181 zookeeper-2:2181 zookeeper-3:2181"
+  #   volumes:
+  #     - ../storage/hbase/hmaster:/hadoop-data
+  #   env_file:
+  #     - ./hbase/hbase.env
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.15
+ 
+  # hbase-regionserver-1:
+  #   image: bde2020/hbase-regionserver
+  #   container_name: hbase-regionserver-1
+  #   hostname: hbase-regionserver-1
+  #   deploy:
+  #     mode: replicated
+  #     replicas: 1
+  #     endpoint_mode: dnsrr
+  #     restart_policy:
+  #       condition: on-failure
+  #     placement:
+  #       constraints:
+  #         - node.hostname == akswnc4.aksw.uni-leipzig.de
+  #   env_file:
+  #     - ./hbase/hbase.env
+  #   volumes:
+  #     - ../storage/hbase/hregion-server-1:/hadoop-data
+  #   environment:
+  #     HBASE_CONF_hbase_regionserver_hostname: hbase-regionserver-1
+  #     SERVICE_PRECONDITION: "namenode:9870 datanode-1:9864 datanode-2:9864 datanode-3:9864 zookeeper-1:2181 zookeeper-2:2181 zookeeper-3:2181 hbase-master:16010"
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.16
+
+  # hbase-regionserver-2:
+  #   image: bde2020/hbase-regionserver
+  #   container_name: hbase-regionserver-2
+  #   hostname: hbase-regionserver-2
+  #   deploy:
+  #     mode: replicated
+  #     replicas: 1
+  #     endpoint_mode: dnsrr
+  #     restart_policy:
+  #       condition: on-failure
+  #     placement:
+  #       constraints:
+  #         - node.hostname == akswnc5.aksw.uni-leipzig.de
+  #   env_file:
+  #     - ./hbase/hbase.env
+  #   volumes:
+  #     - ../storage/hbase/hregion-server-2:/hadoop-data
+  #   environment:
+  #     HBASE_CONF_hbase_regionserver_hostname: hbase-regionserver-2
+  #     SERVICE_PRECONDITION: "namenode:9870 datanode-1:9864 datanode-2:9864 datanode-3:9864 zookeeper-1:2181 zookeeper-2:2181 zookeeper-3:2181 hbase-master:16010"
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.17
+
+  # hbase-regionserver-3:
+  #   image: bde2020/hbase-regionserver
+  #   container_name: hbase-regionserver-3
+  #   hostname: hbase-regionserver-3
+  #   deploy:
+  #     mode: replicated
+  #     replicas: 1
+  #     endpoint_mode: dnsrr
+  #     restart_policy:
+  #       condition: on-failure
+  #     placement:
+  #       constraints:
+  #         - node.hostname == akswnc6.aksw.uni-leipzig.de
+  #   env_file:
+  #     - ./hbase/hbase.env
+  #   volumes:
+  #     - ../storage/hbase/hregion-server-3:/hadoop-data
+  #   environment:
+  #     HBASE_CONF_hbase_regionserver_hostname: hbase-regionserver-3
+  #     SERVICE_PRECONDITION: "namenode:9870 datanode-1:9864 datanode-2:9864 datanode-3:9864 zookeeper-1:2181 zookeeper-2:2181 zookeeper-3:2181 hbase-master:16010"
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.18
+
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+  #   container_name: elasticsearch
+  #   hostname: elasticsearch
+  #   environment:
+  #     - xpack.security.enabled=false
+  #     - "discovery.type=single-node"
+  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #   volumes:
+  #     - ../storage/elasticsearch:/usr/share/elasticsearch/data
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.19
+  #   ports:
+  #     - 9201:9200
+  #   mem_limit: 1g
+  #   logging:
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "5"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.10
+    container_name: kibana
+    hostname: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    volumes:
+      - ../storage/kibana:/usr/share/kibana/data
+    networks:
+      tiki_net:
+        ipv4_address: 172.20.0.20
+    depends_on:
+      - elasticsearch
+    ports:
+      - 5602:5601
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # prometheus:
+  #   image: prom/prometheus
+  #   container_name: prometheus
+  #   hostname: prometheus
+  #   command:
+  #     - '--config.file=/etc/prometheus/prometheus.yml'
+  #   ports:
+  #     - 9089:9090 
+  #     - 9093:9093
+  #   restart: always
+  #   volumes:
+  #     # - ./prometheus:/etc/prometheus
+  #     - ../storage/prometheus:/etc/prometheus/data
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.21
+  #   logging:
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "5"
+        
+  # grafana:
+  #   image: grafana/grafana
+  #   container_name: grafana
+  #   hostname: grafana
+  #   ports:
+  #     - 3000:3000
+  #   restart: always
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #   volumes:
+  #     # - ./grafana:/etc/grafana/provisioning/datasources
+  #     - ../storage/grafana:/etc/grafana/provisioning/datasources
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.22
+  #   logging:
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "5"
+
+  # elasticsearch_exporter:
+  #   image: prometheuscommunity/elasticsearch-exporter:latest
+  #   container_name: elasticsearch_exporter
+  #   command:
+  #    - '--es.uri=http://172.20.0.19:9200'
+  #   restart: always
+  #   ports:
+  #   - "9114:9114"
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.23
+
+  # node-exporter:
+  #   image: prom/node-exporter:v1.1.2
+  #   container_name: node-exporter
+  #   restart: always
+  #   ports:
+  #     - 9100:9100
+  #   volumes:
+  #     - /proc:/host/proc:ro
+  #     - /sys:/host/sys:ro
+  #     - /:/rootfs:ro
+  #   command:
+  #     - "--path.procfs=/host/proc"
+  #     - "--path.sysfs=/host/sys"
+  #     - "--path.rootfs=/rootfs"
+  #     - "--collector.filesystem.ignored-mount-points='^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)'"
+  #   networks:
+  #     tiki_net:
+  #       ipv4_address: 172.20.0.24
+
+  kafka-exporter:
+    image: redpandadata/kminion:v2.2.5
+    container_name: kafka-exporter
+    hostname: kafka-exporter
+    ports:
+      - "9304:8080"
+    environment:
+      KAFKA_BROKERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+    restart: always
+    networks:
+      tiki_net:
+        ipv4_address: 172.20.0.26
+
+networks:
+  tiki_net:
+    name: tiki_net
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/27
+        - gateway: 172.20.0.1
+    labels:
+      - "com.docker.compose.network=tiki_net"
+      - "com.docker.compose.project=tiki"
+      - "com.docker.compose.version=2.6.0"
+    external: true
